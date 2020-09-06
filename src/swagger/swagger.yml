@@ -1,0 +1,467 @@
+swagger: "2.0"
+info:
+  description: "pm API"
+  version: "1.0.0"
+  title: "Swagger Petstore"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "development@pm.com"
+host: "api.pm.com"
+basePath: "/"
+tags:
+- name: "me"
+  description: "Account related paths, everething for have information about the current user"
+- name: "patients"
+  description: "Access to patients and patients information"
+schemes:
+- "https"
+- "http"
+paths:
+  /me:
+    get:
+      tags:
+      - "me"
+      summary: "Get authenticated user profile"
+      responses:
+        200:
+          description: "Logged user"
+          schema:
+            $ref: "#/definitions/UserProfile"
+  /patients/{patientId}:
+    get:
+      tags:
+      - "patients"
+      summary: "Get a patient information"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient to return"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Patient profile"
+          schema:
+            $ref: "#/definitions/UserProfile"
+    patch:
+      tags:
+      - "patients"
+      summary: "Patch patients information"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient to return"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "patient data to be patched"
+        schema:
+          $ref: "#/definitions/PatchPatientData"
+      responses:
+        200:
+          description: "Patient profile"
+  /patients/{patientId}/conditions:
+    get:
+      tags:
+      - "patients"
+      summary: "Get patient conditions"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient to return"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Patient conditions"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ConditionSummary"
+  /patients/{patientId}/conditions/{conditionId}:
+    get:
+      tags:
+      - "patients"
+      summary: "Get patient condition"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "conditionId"
+        in: "path"
+        description: "ID of condition"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Patient condition"
+          schema:
+            $ref: "#/definitions/ConditionSummary"
+    patch:
+      tags:
+      - "patients"
+      summary: "Patch a patient condition"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "conditionId"
+        in: "path"
+        description: "ID of condition"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "condition data to be patched"
+        schema:
+          $ref: "#/definitions/ConditionSummary"
+      responses:
+        200:
+          description: "Condition patched"
+  /patients/{patientId}/ehr-providers/{providerName}:
+    post:
+      tags:
+      - "patients"
+      summary: "Create a user within the given provider"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "providerName"
+        in: "path"
+        description: "name of the provider"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Provider accountInformation"
+          schema:
+            $ref: "#/definitions/MedfusionAccount"
+  /patients/{patientId}/ehrs:
+    get:
+      tags:
+      - "patients"
+      summary: "Get all electornic health records"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "resourceTypes"
+        in: "query"
+        description: "Array of resource type to filter"
+        type: "string"
+      responses:
+        200:
+          description: "Patient related ehrs"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+  /patients/{patientId}/ehrs/procedures:
+    post:
+      tags:
+      - "patients"
+      summary: "Creates a new Procedure record for this patient"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Procedure data"
+        required: true
+        schema:
+          type: "object"
+      responses:
+        200:
+          description: "Created Procedure"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+  /patients/{patientId}/ehrs/procedures/{procedureId}:
+    patch:
+      tags:
+      - "patients"
+      summary: "Patch an specific procedure of a patient"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "procedureId"
+        in: "path"
+        description: "ID of procedure"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Procedure data"
+        required: true
+        schema:
+          type: "object"
+      responses:
+        200:
+          description: "Provider accountInformation"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+    delete:
+      tags:
+      - "patients"
+      summary: "Remove an specific procedure for this patient"
+      parameters:
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient"
+        required: true
+        type: "string"
+      - name: "procedureId"
+        in: "path"
+        description: "ID of procedure"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Provider accountInformation"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+  /patients/{patientId}/peers:
+    get:
+      tags:
+      - "patients"
+      summary: "Get paginated patients"
+      parameters:
+      - name: "offset"
+        in: query
+        required: false
+        default: 0
+        description: "Number of records to skip"
+        type: number
+      - name: "limit"
+        in: query
+        required: false
+        description: "Limit number of peers to retrive"
+        default: 5
+        type: number
+      - name: "patientId"
+        in: "path"
+        description: "ID of patient to return"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Peers found for patient"
+          schema:
+            type: 'object'
+            properties: 
+              total: 
+                type: number
+                description: "Total number of peers"
+              limit: 
+                type: number
+                description: "Limit of peers per page, provided or default"
+              offset:
+                type: number
+                description: "Number of records to skip"
+              docs: 
+                type: "array"
+                description: "Array of peers"
+                items:
+                  $ref: "#/definitions/Patient"
+securityDefinitions:
+  petstore_auth:
+    type: "oauth2"
+    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
+    flow: "implicit"
+    scopes:
+      write:pets: "modify pets in your account"
+      read:pets: "read your pets"
+  api_key:
+    type: "apiKey"
+    name: "api_key"
+    in: "header"
+definitions:
+  UserProfile:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      firstName:
+        type: "string"
+      lastName:
+        type: "string"
+      email:
+        type: "string"
+      patient:
+        $ref: "#/definitions/Patient"
+      createdAt:
+        type: "string"
+      updatedAt:
+        type: "string"
+  PatchPatientData:
+    type: "object"
+    properties:
+      gender:
+        type: "string"
+        enum:
+        - "uknown"
+        - "male"
+        - "female"
+        - "other"
+      birthDate:
+        type: "string"
+      smokingStatus:
+        type: "string"
+        enum:
+        - "current_every_day_smoker"
+        - "current_some_day_smoker"
+        - "former_smoker"
+        - "never_smoker"
+        - "smoker_current_status_unknown"
+        - "current_heavy_tabacco_smoker"
+        - "current_light_tabacco_smoker"
+        - "unkown_if_ever_smoked"
+  ConditionSummary:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      type:
+        type: "string"
+        readOnly: true
+      clinicalSatus:
+        type: "string"
+        enum:
+        - "active"
+        - "innactive"
+        - "recurrent"
+        - "relapsed"
+        - "remmision"
+        - "resolved"
+      descriptors:
+        type: "array"
+        items:
+          $ref: "#/definitions/Descriptor"
+  Descriptor:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      type:
+        type: "string"
+      label:
+        type: "string"
+      name:
+        type: "string"
+  Patient:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      names:
+        type: "array"
+        items:
+          $ref: "#/definitions/HumanName"
+      addresses:
+        type: "array"
+        items:
+          $ref: "#/definitions/Address"
+      gender:
+        type: "string"
+        enum:
+        - "uknown"
+        - "male"
+        - "female"
+        - "other"
+      birthDate:
+        type: "string"
+      smokingStatus:
+        type: "string"
+        enum:
+        - "current_every_day_smoker"
+        - "current_some_day_smoker"
+        - "former_smoker"
+        - "never_smoker"
+        - "smoker_current_status_unknown"
+        - "current_heavy_tabacco_smoker"
+        - "current_light_tabacco_smoker"
+        - "unkown_if_ever_smoked"
+      ehrProviders:
+        type: "object"
+        properties:
+          medfusion:
+            $ref: "#/definitions/MedfusionAccount"
+  HumanName:
+    type: "object"
+    properties:
+      use:
+        type: "string"
+        enum:
+          - "usual"
+          - "official"
+          - "temp"
+          - "nickname"
+          - "anonymous"
+          - "old"
+          - "maiden"
+      given:
+        type: "array"
+        items:
+          type: "string"
+      family:
+        type: "array"
+        items:
+          type: "string"
+      prefix:
+        type: "array"
+        items:
+          type: "string"
+      suffix:
+        type: "array"
+        items:
+          type: "string"
+  Address:
+    type: "object"
+    properties:
+      use:
+        type: "string"
+      type:
+        type: "string"
+      state:
+        type: "string"
+      country:
+        type: "string"
+      city:
+        type: "string"
+      lines:
+        type: "array"
+        items:
+          type: "string"
+  MedfusionAccount:
+    type: "object"
+    properties:
+      userUuid:
+        type: "string"
+      accessToken:
+        type: "string"
+      mainProfileId:
+        type: "string"
+      lastSync:
+        type: "string"

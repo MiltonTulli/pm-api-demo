@@ -1,0 +1,170 @@
+service: pm-api
+
+frameworkVersion: ">=1.37.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-2'}
+  memorySize: 1024
+  timeout: 10
+  logRetentionInDays: 30
+  deploymentBucket:
+    name: ${env:DEPLOYMENT_BUCKET}
+    serverSideEncryption: AES256
+  versionFunctions: true
+  endpointType: edge
+  usagePlan:
+    throttle:
+      burstLimit: 200
+      rateLimit: 100
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "sqs:SendMessage"
+        - "sqs:GetQueueUrl"
+      Resource: ${env:EXTRACTION_WORKER_SQS_ARN}
+    - Effect: "Allow"
+      Action:
+        - "ses:SendEmail"
+        - "ses:SendRawEmail"
+      Resource: ${env:NOTIFICATIONS_SES_ARN}
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .idea/**
+    - docs/**
+    - migrations/**
+    - infrastructure/**
+    - test/**
+    - src/jobs/**
+    - .dockerignore
+    - .env*
+    - .eslint*
+    - .nvmrc
+    - .nycrc
+    - docker-compose.yml
+    - Dockerfile
+    - README.md
+    - migrate-mongo-config.js
+    - server.js
+    - bitbucket-pipelines.yml
+  include:
+    - serverless.js
+
+functions:
+  api:
+    handler: serverless.handler
+    name: ${self:service}-${self:provider.stage}
+    description: PeerMedical REST API
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+    environment:
+      NODE_ENV: ${env:NODE_ENV}
+      LOG_LEVEL: ${env:LOG_LEVEL, 'error'}
+      MONGODB_URI: ${env:MONGODB_URI}
+      MONGOOSE_AUTO_INDEX: ${env:MONGOOSE_AUTO_INDEX, 'false'}
+      CORS_ALLOWED_DOMAINS: ${env:CORS_ALLOWED_DOMAINS}
+      DEBUG: ${env:DEBUG}
+      DEBUG_DEPTH: ${env:DEBUG_DEPTH, '5'}
+      MEDFUSION_CUSTOMER_UUID: ${env:MEDFUSION_CUSTOMER_UUID}
+      MEDFUSION_CLIENT_ID: ${env:MEDFUSION_CLIENT_ID}
+      MEDFUSION_API_KEY: ${env:MEDFUSION_API_KEY}
+      MEDFUSION_CLIENT_SECRET: ${env:MEDFUSION_CLIENT_SECRET}
+      MEDFUSION_TIMEOUT: ${env:MEDFUSION_TIMEOUT, '10000'}
+      MEDFUSION_API_URL: ${env:MEDFUSION_API_URL}
+      AWS_COGNITO_USER_POOL_ARN:
+        Fn::GetAtt:
+          - UserPool
+          - Arn
+      AWS_COGNITO_TOKEN_USE: ${env:AWS_COGNITO_TOKEN_USE, 'id'}
+      AWS_COGNITO_TOKEN_EXPIRES_IN_MS: ${env:AWS_COGNITO_TOKEN_EXPIRES_IN_MS, '3600000'}
+      EXTRACTION_WORKER_SQS_URL: ${env:EXTRACTION_WORKER_SQS_URL}
+      INTERCOM_IDENTIFY_VERIFICATION_SECRET: ${env:INTERCOM_IDENTIFY_VERIFICATION_SECRET}
+      SENDBIRD_APP_ID: ${env:SENDBIRD_APP_ID}
+      SENDBIRD_APP_TOKEN: ${env:SENDBIRD_APP_TOKEN}
+      AWS_SES_REGION: ${env:AWS_SES_REGION}
+      GROWSURF_API: ${env:GROWSURF_API}
+      GROWSURF_CAMPAIGN_ID: ${env:GROWSURF_CAMPAIGN_ID}
+      GROWSURF_API_KEY: ${env:GROWSURF_API_KEY}
+  
+  preSignUp:
+    handler: /src/services/auth/triggers/preSignUp.handler
+    name: pm-presignup-${self:provider.stage}
+    description: PeerMedical preSignUp cognito trigger
+    environment:
+      NODE_ENV: ${env:NODE_ENV}
+      MONGODB_URI: ${env:MONGODB_URI}
+      DEBUG: ${env:DEBUG}
+      DEBUG_DEPTH: ${env:DEBUG_DEPTH, '5'}
+      GOOGLE_CAPTCHA_SECRET_KEY: ${env:GOOGLE_CAPTCHA_SECRET_KEY}
+      GOOGLE_URL: ${env:GOOGLE_URL}
+      GOOGLE_RECAPTCHA_VALIDATION_URL_PATH: ${env:GOOGLE_RECAPTCHA_VALIDATION_URL_PATH}
+      INTERCOM_IDENTIFY_VERIFICATION_SECRET: ${env:INTERCOM_IDENTIFY_VERIFICATION_SECRET}
+
+  preAuthentication:
+    handler: /src/services/auth/triggers/preAuthentication.handler
+    name: pm-preAuthentication-${self:provider.stage}
+    description: PeerMedical preAuthentication cognito trigger
+    environment:
+      NODE_ENV: ${env:NODE_ENV}
+      MONGODB_URI: ${env:MONGODB_URI}
+      DEBUG: ${env:DEBUG}
+      DEBUG_DEPTH: ${env:DEBUG_DEPTH, '5'}
+
+resources:
+  Resources: 
+    UserPool:
+      Type: AWS::Cognito::UserPool
+      DependsOn:
+        - PreSignUpLambdaFunction
+        - PreAuthenticationLambdaFunction
+      Properties:
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        LambdaConfig:
+          PreAuthentication:
+            Fn::GetAtt:
+              - PreAuthenticationLambdaFunction
+              - Arn              
+          PreSignUp:
+            Fn::GetAtt:
+              - PreSignUpLambdaFunction
+              - Arn
+    PreAuthenticationLambdaFunctionInvokePermission:
+      Type: AWS::Lambda::Permission
+      DependsOn:
+        - PreAuthenticationLambdaFunction
+        - UserPool
+      Properties:
+        Action: lambda:InvokeFunction
+        FunctionName:
+          Fn::GetAtt:
+            - PreAuthenticationLambdaFunction
+            - Arn
+        Principal: cognito-idp.amazonaws.com
+        SourceArn:
+          Fn::GetAtt:
+            - UserPool
+            - Arn
+    PreSignUpLambdaFunctionInvokePermission:
+      Type: AWS::Lambda::Permission
+      DependsOn:
+        - PreSignUpLambdaFunction
+        - UserPool
+      Properties:
+        Action: lambda:InvokeFunction
+        FunctionName:
+          Fn::GetAtt:
+            - PreSignUpLambdaFunction
+            - Arn
+        Principal: cognito-idp.amazonaws.com
+        SourceArn:
+          Fn::GetAtt:
+            - UserPool
+            - Arn

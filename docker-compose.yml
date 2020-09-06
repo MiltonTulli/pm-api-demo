@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  # The express api.
+  api:
+    container_name: pm_api
+    command: npm run dev
+    build: .
+    env_file: .env
+    volumes:
+      - ./:/app
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongodb
+  # MongoDB database.
+  mongodb:
+    container_name: pm_mongodb
+    image: mongo:4.0.6
+    ports:
+      - 27017:27017
+    volumes:
+      - ./dumps:/dumps
