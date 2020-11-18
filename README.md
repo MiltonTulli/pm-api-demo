@@ -1,5 +1,7 @@
 # PM API
 
+This code is just for demo - 
+
 ### REST API
 - Our REST API is built in NodeJS using Express.
 - The API is deployed to a Lambda function that is behind API Gateway.
